@@ -42,11 +42,6 @@ func main() {
 	<-sc
 	// Cleanly close down the Discord session.
 	session.Close()
-
-	
-	
-
-
 }
 
 //checks everytime a message is created
@@ -78,6 +73,7 @@ func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 		switch split[0] {
 			case "!play":
 				fmt.Println("this is the play command")
+				joinCall(session, msg.Author.ID)	// joins vc
 			case "!skip":
 				fmt.Println("this is the play command")
 			case "!pause":
@@ -87,4 +83,23 @@ func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 		}
 
 	}
+}
+
+// joins the same voice channel as the user who requested the song
+func joinCall(session *discordgo.Session, userID string) {
+	// gets the guild that they belong to
+	chnl, err := session.Channel(chlBound)
+	if err!=nil {
+		fmt.Println("Unable to obtain bound Discord channel")
+		return
+	}
+	// use state.voicestate to get the voice state of the user who called it
+	vs, err := session.State.VoiceState(chnl.GuildID, userID)
+	if err!=nil {
+		fmt.Println("User is not part of a Voice Call (unable to create VoiceState)")
+		return
+	}
+	// use the voice state to get the voice channel the user is in
+	// join that voice channel
+	session.ChannelVoiceJoin(chnl.GuildID, vs.ChannelID, false, false)
 }
