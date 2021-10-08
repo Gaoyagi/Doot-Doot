@@ -5,18 +5,25 @@ import(
 	"os"
 	"os/signal"
 	"syscall"
-	"github.com/bwmarrin/discordgo"
-	"github.com/spf13/viper"
 	"strings"
+	"github.com/bwmarrin/discordgo"
+	"github.com/bwmarrin/dgvoice"
+	"github.com/spf13/viper"
 )
 
 var bound bool = false
 var chlBound string
+var guildID string
+var queue = make([]string, 0, 0)
 
-func main() {
-	// load the .env file
+// load the .env file
+func loadDotEnv() {
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
+}
+
+func main() {
+	loadDotEnv()
 
 	//create discord session
 	session, err := discordgo.New("Bot " + viper.GetString("BOT_TOKEN"))
@@ -28,13 +35,13 @@ func main() {
 	//this add handler handles whenever a message is created
 	//the message created is a callback
 	session.AddHandler(msgCreate)
-
 	// Open a websocket connection to Discord and begin listening.
 	err = session.Open()
 	if err != nil {
 		fmt.Println("error opening connection,", err)
 		return
 	}
+
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
@@ -47,10 +54,10 @@ func main() {
 //checks everytime a message is created
 //should look for channel origin, an @, commands
 func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
-	split := strings.Split(msg.Content, " ")
-	//if unbound
+	split := strings.Split(msg.Content, " ")	//split message up by word
+	// if unbound
 	if !bound{
-		// checks to see if this message will bind it (command: @bot bind)
+		// checks to see if this message will bind it (command: @Doot-Doot bind)
 		if msg.Mentions[0].ID==session.State.User.ID{
 			if len(split)==2 && split[1]=="bind"{
 				bound = true
@@ -58,48 +65,98 @@ func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 				fmt.Println("doot-doot is now bound")
 			}
 		} 
-	//if bound
+	// if bound
 	} else {
-		// check to see if fired message was in the bounded to channel
-		if msg.ChannelID != chlBound{
-			fmt.Println("wrong channel")
+		// only consider messages if not from itself and if in bounded channel
+		if msg.ChannelID == chlBound && msg.Author.ID != session.State.User.ID {
+			ch1 := make(chan bool)
+			switch split[0] {
+				// joins vc and then plays specified song (!play songFile)
+				case "!play":
+					fmt.Println("this is the play command")
+					// // if the play command doesnt include a url
+					// if len(split)!=2{
+					// 	return
+					// }
+					//joinCall(session, msg.Author.ID)	// joins vc
+					voiceCall, err := joinCall(session, msg.Author.ID)	// joins vc
+					if err!=nil {
+						fmt.Println("Unable to join VC")
+					} else {
+						queue = append(queue, split[1])
+						fmt.Println(queue[0])
+						// ch1 <- false
+						dgvoice.PlayAudioFile(voiceCall, "./"+split[1], ch1)
+						queue = queue[1:]
+					}
+					
+				// skips to the next song in queue
+				case "!skip":
+					fmt.Println("this is the command")
+					ch1 <- true
+					//dgvoice.PlayAudioFile(voiceCall, "./"+queue[0], ch1)
+					//queue = queue[1:]
+				// stops playing music and leaves the call
+				case "!stop":
+					fmt.Println("this is the stop command")
+					ch1 <- true		// kills ffmpeg in playaudiofile
+					session.ChannelVoiceJoinManual(guildID, "", false, false)
+					// func clearQueue()
+				default:
+					fmt.Println("invalid command")
+			}
+		} else {
 			return
 		}
-		// disregard messages from itself
-		if msg.Author.ID == session.State.User.ID {
-			return
-		} 
-
-		switch split[0] {
-			case "!play":
-				fmt.Println("this is the play command")
-				joinCall(session, msg.Author.ID)	// joins vc
-			case "!skip":
-				fmt.Println("this is the play command")
-			case "!pause":
-				fmt.Println("this is the pause command")
-			default:
-				fmt.Println("invalid command")
-		}
-
 	}
 }
 
+
 // joins the same voice channel as the user who requested the song
-func joinCall(session *discordgo.Session, userID string) {
+func joinCall(session *discordgo.Session, userID string) (*discordgo.VoiceConnection, error){
 	// gets the guild that they belong to
 	chnl, err := session.Channel(chlBound)
 	if err!=nil {
 		fmt.Println("Unable to obtain bound Discord channel")
-		return
+		return nil, err
 	}
+	guildID = chnl.GuildID
 	// use state.voicestate to get the voice state of the user who called it
-	vs, err := session.State.VoiceState(chnl.GuildID, userID)
+	vs, err := session.State.VoiceState(guildID, userID)
 	if err!=nil {
 		fmt.Println("User is not part of a Voice Call (unable to create VoiceState)")
-		return
+		return  nil, err
 	}
 	// use the voice state to get the voice channel the user is in
 	// join that voice channel
-	session.ChannelVoiceJoin(chnl.GuildID, vs.ChannelID, false, false)
+	return session.ChannelVoiceJoin(guildID, vs.ChannelID, false, false)
 }
+
+func playSong(session *discordgo.Session, file string, voiceCall*discordgo.VoiceConnection) {
+	
+	
+	/* illegal to use due to dmca and youtube terms of service
+	client := youtube.Client{}
+
+	video, err := client.GetVideo(videoID)
+	if err != nil {
+		panic(err)
+	}
+
+	stream, _, err := client.GetStream(video, &video.Formats[0])
+	if err != nil {
+		panic(err)
+	}
+
+	file, err := os.Create("video.mp4")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, stream)
+	if err != nil {
+		panic(err)
+	 }*/
+}
+
