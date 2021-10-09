@@ -15,6 +15,7 @@ var bound bool = false
 var chlBound string
 var guildID string
 var queue = make([]string, 0, 0)
+var voiceCall *discordgo.VoiceConnection
 
 // load the .env file
 func loadDotEnv() {
@@ -69,48 +70,52 @@ func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 	} else {
 		// only consider messages if not from itself and if in bounded channel
 		if msg.ChannelID == chlBound && msg.Author.ID != session.State.User.ID {
-			ch1 := make(chan bool)
+			killch := make(chan bool)
 			switch split[0] {
 				// joins vc and then plays specified song (!play songFile)
 				case "!play":
 					fmt.Println("this is the play command")
-					// // if the play command doesnt include a url
-					// if len(split)!=2{
-					// 	return
-					// }
-					//joinCall(session, msg.Author.ID)	// joins vc
-					voiceCall, err := joinCall(session, msg.Author.ID)	// joins vc
-					if err!=nil {
-						fmt.Println("Unable to join VC")
+					// check if bot is already in call
+					if voiceCall == nil {
+						vc, err := joinCall(session, msg.Author.ID)	// joins vc
+						if err!=nil {
+							fmt.Println("Unable to join VC")
+						} else {
+							voiceCall = vc
+						}
+					}
+					// if the play command doesnt include a url/file name
+					if len(split)!=2{
+						session.ChannelMessageSend(chlBound, "no file name or url detected")
 					} else {
 						queue = append(queue, split[1])
-						fmt.Println(queue[0])
-						// ch1 <- false
-						dgvoice.PlayAudioFile(voiceCall, "./"+split[1], ch1)
-						queue = queue[1:]
+						fmt.Println("now playing " + queue[0])
+						dgvoice.PlayAudioFile(voiceCall, "./"+queue[0], killch)
+						queue = queue[1:]   // removes song that is already playing from queue
 					}
-					
 				// skips to the next song in queue
 				case "!skip":
 					fmt.Println("this is the command")
-					ch1 <- true
+					//killch <- true
 					//dgvoice.PlayAudioFile(voiceCall, "./"+queue[0], ch1)
 					//queue = queue[1:]
-				// stops playing music and leaves the call
+				// stops playing music and leaves the call,
 				case "!stop":
 					fmt.Println("this is the stop command")
-					ch1 <- true		// kills ffmpeg in playaudiofile
-					session.ChannelVoiceJoinManual(guildID, "", false, false)
-					// func clearQueue()
+					killch <- true			// kills ffmpeg in playaudiofile, stops the current song playing
+					voiceCall.Disconnect()  // leaves the vc
+					queue = nil				// clears queue
+					// close(killch)
+					// killch = make(chan bool)
 				default:
 					fmt.Println("invalid command")
+					session.ChannelMessageSend(chlBound, "invalid command")
 			}
 		} else {
 			return
 		}
 	}
 }
-
 
 // joins the same voice channel as the user who requested the song
 func joinCall(session *discordgo.Session, userID string) (*discordgo.VoiceConnection, error){
@@ -132,7 +137,7 @@ func joinCall(session *discordgo.Session, userID string) (*discordgo.VoiceConnec
 	return session.ChannelVoiceJoin(guildID, vs.ChannelID, false, false)
 }
 
-func playSong(session *discordgo.Session, file string, voiceCall*discordgo.VoiceConnection) {
+func downloadSong(session *discordgo.Session, file string, voiceCall*discordgo.VoiceConnection) {
 	
 	
 	/* illegal to use due to dmca and youtube terms of service
