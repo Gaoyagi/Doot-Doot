@@ -14,8 +14,9 @@ import (
 var bound bool = false
 var chlBound string
 var guildID string
-var queue = make([]string, 0, 0)
+var queue = make(chan string, 20)
 var voiceCall *discordgo.VoiceConnection
+var killch = make(chan bool, 2)
 
 // load the .env file
 func loadDotEnv() {
@@ -45,6 +46,9 @@ func main() {
 
 	// Wait here until CTRL-C or other term signal is received.
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
+
+	go playSong()
+
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
@@ -56,7 +60,6 @@ func main() {
 //should look for channel origin, an @, commands
 func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 	split := strings.Split(msg.Content, " ")	//split message up by word
-	killch := make(chan bool, 2)
 	// if unbound
 	if !bound{
 		// checks to see if this message will bind it (command: @Doot-Doot bind)
@@ -71,12 +74,10 @@ func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 	} else {
 		// only consider messages if not from itself and if in bounded channel
 		if msg.ChannelID == chlBound && msg.Author.ID != session.State.User.ID {
-			
 			switch split[0] {
 				// joins vc and then plays specified song (!play songFile)
 				case "!play":
 					log.Println("this is the play command")
-					
 					// check if bot is already in call
 					if voiceCall == nil {
 						vc, err := joinCall(session, msg.Author.ID)	// joins vc
@@ -85,32 +86,25 @@ func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 						} else {
 							voiceCall = vc
 						}
+					} 
+					if voiceCall!=nil {
+						// if the play command doesnt include a url/file name
+						if len(split)!=2{
+							session.ChannelMessageSend(chlBound, "no file name or url detected")
+						} else {
+							queue <- split[1]
+						}
 					}
-					// if the play command doesnt include a url/file name
-					if len(split)!=2{
-						session.ChannelMessageSend(chlBound, "no file name or url detected")
-					} else {
-						// queue = append(queue, "Sunflower.mp3")
-						// queue = append(queue, "September.mp3")
-						queue = append(queue, split[1])
-						log.Println("now playing " + queue[0])
-						// for _, song := range queue {
-						// 	dgvoice.PlayAudioFile(voiceCall, "music/"+song, killch)
-						// }
-						//dgvoice.PlayAudioFile(voiceCall, "music/"+queue[0], killch)	
-						queue = queue[1:]   // removes song that is already playing from queue
-					}
+					
 				// skips to the next song in queue
 				case "!skip":
 					log.Println("this is skip the command")
 					killch <- true
-					//dgvoice.PlayAudioFile(voiceCall, "music/"+queue[0], killch)
+					killch <- false
 				// stops playing music and leaves the call,
 				case "!stop":
 					log.Println("this is the stop command")
 					killch <- true			// sends a value to killch, should kill ffmpeg in playaudiofile
-					log.Println(killch)
-					log.Println("post killch recieve")
 					voiceCall.Disconnect()  // leaves the vc
 					voiceCall = nil
 					queue = nil				// clears queue
@@ -146,11 +140,16 @@ func joinCall(session *discordgo.Session, userID string) (*discordgo.VoiceConnec
 	return session.ChannelVoiceJoin(guildID, vs.ChannelID, false, false)
 }
 
-
+func playSong() {
+	for {
+		song:= <-queue
+		log.Println("now playing " + song)
+		dgvoice.PlayAudioFile(voiceCall, "music/"+song, killch)
+	}
+	
+}
 
 func downloadSong(session *discordgo.Session, file string, voiceCall*discordgo.VoiceConnection) {
-	
-	
 	/* illegal to use due to dmca and youtube terms of service
 	client := youtube.Client{}
 
