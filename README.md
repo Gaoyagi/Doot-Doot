@@ -1,3 +1,14 @@
+# Doot-Doot bot
+A Golang Discod muisc bot that join calls and streams music to everyone in the call.
+(inspired by rhytm and Groovy bots)
+
+## Direct Dependencies:
+- github.com/bwmarrin/discordgo
+- github.com/bwmarrin/dgvoice
+- github.com/spf13/viper
+
+## Author 
+
 game plan:
 -create discord bot [x]
 -figure out how to get it to react to an @'ing in a channel
