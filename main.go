@@ -174,4 +174,3 @@ func downloadSong(session *discordgo.Session, file string, voiceCall*discordgo.V
 		panic(err)
 	 }*/
 }
-
