@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"github.com/Gaoyagi/Doot-Doot/dgvoice"
+	"github.com/Gaoyagi/dgvoice"
 	"github.com/bwmarrin/discordgo"
 	"github.com/spf13/viper"
 )
