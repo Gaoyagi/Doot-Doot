@@ -3,11 +3,9 @@ module github.com/Gaoyagi/Doot-Doot
 go 1.17
 
 require (
-	github.com/Gaoyagi/dgvoice v0.0.0-20211013064926-a7c2aca7f07c
-	github.com/bwmarrin/dgvoice v0.0.0-20210225172318-caaac756e02e
+	github.com/Gaoyagi/dgvoice v0.0.0-20211015041518-bc28c8687e16
 	github.com/bwmarrin/discordgo v0.23.2
 	github.com/spf13/viper v1.9.0
-	layeh.com/gopus v0.0.0-20210501142526-1ee02d434e32
 )
 
 require (
@@ -27,4 +25,5 @@ require (
 	golang.org/x/text v0.3.6 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	layeh.com/gopus v0.0.0-20210501142526-1ee02d434e32 // indirect
 )
