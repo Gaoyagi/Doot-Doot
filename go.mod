@@ -3,7 +3,7 @@ module github.com/Gaoyagi/Doot-Doot
 go 1.17
 
 require (
-	github.com/Gaoyagi/dgvoice v0.0.0-20211015180948-e80ee4e40ef6
+	github.com/Gaoyagi/dgvoice v0.0.0-20211021003044-bb67cca665c4
 	github.com/bwmarrin/discordgo v0.23.2
 	github.com/spf13/viper v1.9.0
 )

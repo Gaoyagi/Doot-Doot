@@ -92,6 +92,7 @@ func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 						if len(split)!=2{
 							session.ChannelMessageSend(chlBound, "no file name or url detected")
 						} else {
+
 							queue <- split[1]
 						}
 					}
@@ -100,15 +101,17 @@ func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 				case "!skip":
 					log.Println("this is skip the command")
 					killch <- true
-					killch <- false
 				// stops playing music and leaves the call,
 				case "!stop":
 					log.Println("this is the stop command")
 					killch <- true			// sends a value to killch, should kill ffmpeg in playaudiofile
-					voiceCall.Disconnect()  // leaves the vc
+					//voiceCall.Disconnect()  // leaves the vc
 					voiceCall = nil
-					queue = nil				// clears queue
-					killch <- false
+					// clears queue
+					for len(queue) > 0 {
+						temp:=<-queue
+						log.Println("cleared "+ temp)
+					}
 		
 				default:
 					log.Println("invalid command")
@@ -174,3 +177,4 @@ func downloadSong(session *discordgo.Session, file string, voiceCall*discordgo.V
 		panic(err)
 	 }*/
 }
+
