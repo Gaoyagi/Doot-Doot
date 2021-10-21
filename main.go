@@ -104,15 +104,17 @@ func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 				// stops playing music and leaves the call,
 				case "!stop":
 					log.Println("this is the stop command")
-					killch <- true			// sends a value to killch, should kill ffmpeg in playaudiofile
-					//voiceCall.Disconnect()  // leaves the vc
-					voiceCall = nil
-					// clears queue
+					//clears the queue
 					for len(queue) > 0 {
 						temp:=<-queue
 						log.Println("cleared "+ temp)
 					}
-		
+					killch <- true			// sends a value to killch, should kill ffmpeg in playaudiofile
+					
+				case "!leave":
+					voiceCall.Disconnect()  // leaves the vc
+					voiceCall = nil
+					
 				default:
 					log.Println("invalid command")
 					session.ChannelMessageSend(chlBound, "invalid command")
