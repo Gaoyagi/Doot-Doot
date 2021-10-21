@@ -9,6 +9,7 @@ import (
 	"github.com/Gaoyagi/dgvoice"
 	"github.com/bwmarrin/discordgo"
 	"github.com/spf13/viper"
+	"time"
 )
 
 var bound bool = false
@@ -109,11 +110,14 @@ func msgCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 						temp:=<-queue
 						log.Println("cleared "+ temp)
 					}
-					killch <- true			// sends a value to killch, should kill ffmpeg in playaudiofile
-					
-				case "!leave":
-					voiceCall.Disconnect()  // leaves the vc
+					killch <- true				// sends a value to killch, should kill ffmpeg in playaudiofile
+					time.Sleep(1*time.Second)	// need to wait for the audio stream to close compeltly before exiting the vc
+					voiceCall.Disconnect()  	// leaves the vc
 					voiceCall = nil
+					
+				// case "!leave":
+				// 	voiceCall.Disconnect()  // leaves the vc
+				// 	voiceCall = nil
 					
 				default:
 					log.Println("invalid command")
