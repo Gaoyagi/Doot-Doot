@@ -17,8 +17,7 @@ Inspired by the need to replace Rythm and Groovy bots after their takedown and t
 ## How to use:
 - clone this repo
 - create a .env file
-- aquire my bot token (you can't)
-- cd to Doot-Doot
+- aquire discord bot token
 - go mod tidy
 - go build
 - ./Doot-Doot
