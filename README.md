@@ -1,8 +1,7 @@
 # Doot-Doot bot
 ## About
 A Golang Discod muisc bot that join calls and streams music to everyone in the call.
-Inspired by the need to replace Rythm and Groovy bots after their takedown and the need to relearn GoLang 
-(I also learned why they were taken down lol)
+Inspired by Rythm and Groovy bots
 
 ## Direct Dependencies:
 - github.com/bwmarrin/discordgo
