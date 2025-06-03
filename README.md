@@ -37,7 +37,7 @@ Inspired by the need to replace Rythm and Groovy bots after their takedown and t
 
 
 ## Author 
-George Aoyagi
+gaoyagi
 
 
 
